@@ -3,48 +3,40 @@ import Footer from "./components/Footer";
 import Header from './components/Header'
 import './index.css';
 import Items from "./components/Items";
+import Categories from "./components/Categories";
+import FullItem from "./components/FullItem";
 
 class App extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
       orders: [],
-      items: [
-        {
-          id: 1,
-          title: 'Xiaomi 12x 8/256',
-          price: '49990',
-          img: 'xiaomi12x.png'
-        },
-        {
-          id: 2,
-          title: 'Redmi 12c 4/128',
-          price: '12990',
-          img: 'redmi12c.png'
-        },
-        {
-          id: 3,
-          title: 'Poco F4 GT 12/256',
-          price: '54990',
-          img: 'pocof4gt.png'
-        },
-      ]
+      currentItems: [],
+      items: [], 
+      showFullItem: false,
+      fullItem: {}
     }
     this.addToOrder = this.addToOrder.bind(this)
     this.deleteOrder = this.deleteOrder.bind(this)
+    this.chooseCategory = this.chooseCategory.bind(this)
+    this.onShowItem = this.onShowItem.bind(this)
+    this.items = this.getItems.bind(this)
+    this.state.currentItems = this.state.items
   }
   render() {
     return (
       <div className="wrapper">
         <Header orders={this.state.orders} onDelete={this.deleteOrder} />
-        <Items items={this.state.items} onAdd={this.addToOrder} />
+        <Categories onChoose={this.chooseCategory} />
+        <Items onShowItem={this.onShowItem} items={this.state.currentItems} onAdd={this.addToOrder} />
+        {this.state.showFullItem && <FullItem onShowItem={this.onShowItem} onAdd={this.addToOrder} item={this.state.fullItem} />}
         <Footer />
       </div>
     );
   }
 
-  deleteOrder(id) {  
-     this.setState({orders: this.state.orders.filter(el => el.id !== id)})
+  deleteOrder(id) {
+    this.setState({ orders: this.state.orders.filter(el => el.id !== id) })
   }
 
   addToOrder(item) {
@@ -55,6 +47,32 @@ class App extends React.Component {
     })
     if (!isInArray)
       this.setState({ orders: [...this.state.orders, item] })
+  }
+
+  chooseCategory(category) {
+    if (category === 0) {
+      this.setState({ currentItems: this.state.items })
+      return;
+    }
+    this.setState({
+      currentItems: this.state.items.filter(el => el.category === category)
+    })
+  }
+
+
+  componentDidMount() {
+    this.getItems();
+  }
+
+  getItems = async () => {
+    const response = await fetch('http://mi-shka.online:7054/v1/api/products');
+    const data = await response.json();
+    this.setState({ items: data.filter(el => el.status !== 'DISABLED') });
+  }
+
+  onShowItem(item) {
+    this.setState({ fullItem: item })
+    this.setState({ showFullItem: !this.state.showFullItem })
   }
 
 }
